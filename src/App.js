@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Statistics from './Statistics';
 
@@ -45,20 +45,28 @@ const Title = styled.h1`
   font-size: 28px;
 `;
 
-const AddButton = styled.button`
-  background: linear-gradient(to bottom, #799905 5%, #536904 95%);
-  color: #d2e885;
+const HeaderButton = styled.button`
+  background: linear-gradient(to bottom, ${props => props.primary ? '#67c1f5' : '#799905'} 5%, ${props => props.primary ? '#3182b8' : '#536904'} 95%);
+  color: ${props => props.primary ? '#fff' : '#d2e885'};
   border: none;
   padding: 10px 20px;
   border-radius: 3px;
   cursor: pointer;
   font-weight: bold;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
   &:hover {
-    background: linear-gradient(to bottom, #8cb306 5%, #6a8504 95%);
+    background: linear-gradient(to bottom, ${props => props.primary ? '#7dcbf7' : '#8cb306'} 5%, ${props => props.primary ? '#4292c0' : '#6a8504'} 95%);
     color: #fff;
   }
+`;
+
+const HeaderButtons = styled.div`
+  display: flex;
+  gap: 15px;
 `;
 
 // Task Library Styles
@@ -130,6 +138,22 @@ const ControlButton = styled.button`
   }
 `;
 
+const EditButton = styled.button`
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-right: 10px;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.3);
+  }
+`;
+
 const DeleteButton = styled.button`
   background: rgba(255, 100, 100, 0.2);
   color: #ff6464;
@@ -197,6 +221,35 @@ const FormInput = styled.input`
   }
 `;
 
+const UploadLabel = styled.label`
+  display: block;
+  padding: 10px 15px;
+  background: #2a3f5a;
+  color: #66c0f4;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #3d556e;
+  }
+`;
+
+const FileInput = styled.input`
+  display: none;
+`;
+
+const ImagePreview = styled.div`
+  margin-top: 15px;
+  img {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 3px;
+  }
+`;
+
 const ModalButtons = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -211,6 +264,11 @@ const formatTime = (seconds) => {
   const secs = seconds % 60;
   
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const parseTimeString = (timeString) => {
+  const [hours = 0, minutes = 0, seconds = 0] = timeString.split(':').map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
 };
 
 const saveTasksToStorage = (tasks) => {
@@ -237,7 +295,6 @@ const loadTasksFromStorage = () => {
 const App = () => {
   const [tasks, setTasks] = useState(() => {
     const loadedTasks = loadTasksFromStorage();
-    // Reset running states when loading
     return loadedTasks.map(task => ({
       ...task,
       isRunning: false,
@@ -246,6 +303,7 @@ const App = () => {
   });
 
   const [showModal, setShowModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
     background: 'https://via.placeholder.com/300x120?text=Task+Image',
@@ -253,6 +311,8 @@ const App = () => {
     isRunning: false,
     startTime: null
   });
+  const [imagePreview, setImagePreview] = useState('');
+  const fileInputRef = useRef(null);
 
   // Save tasks whenever they change
   useEffect(() => {
@@ -275,7 +335,6 @@ const App = () => {
           return task;
         });
         
-        // Only update state if there are running tasks
         if (updatedTasks.some(task => task.isRunning)) {
           return updatedTasks;
         }
@@ -312,18 +371,69 @@ const App = () => {
     setNewTask(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setNewTask(prev => ({ ...prev, background: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleTimeChange = (e) => {
+    const timeString = e.target.value;
+    if (/^(\d{0,2}:?){0,3}$/.test(timeString)) {
+      const seconds = parseTimeString(timeString);
+      setNewTask(prev => ({ ...prev, timeSpent: seconds }));
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setNewTask({
+      title: task.title,
+      background: task.background,
+      timeSpent: task.timeSpent,
+      isRunning: false,
+      startTime: null
+    });
+    setImagePreview(task.background);
+    setShowModal(true);
+  };
+
   const handleAddTask = () => {
     if (newTask.title.trim() === '') return;
     
-    const task = {
-      ...newTask,
-      id: Date.now(),
-      timeSpent: 0,
-      isRunning: false,
-      startTime: null
-    };
+    if (editingTask) {
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === editingTask.id 
+            ? { 
+                ...task, 
+                title: newTask.title,
+                background: newTask.background,
+                timeSpent: newTask.timeSpent
+              } 
+            : task
+        )
+      );
+    } else {
+      const task = {
+        ...newTask,
+        id: Date.now(),
+        isRunning: false,
+        startTime: null
+      };
+      setTasks(prev => [...prev, task]);
+    }
     
-    setTasks(prev => [...prev, task]);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setNewTask({
       title: '',
       background: 'https://via.placeholder.com/300x120?text=Task+Image',
@@ -331,7 +441,12 @@ const App = () => {
       isRunning: false,
       startTime: null
     });
+    setEditingTask(null);
+    setImagePreview('');
     setShowModal(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleDeleteTask = (id) => {
@@ -348,7 +463,6 @@ const App = () => {
             startTime: Date.now()
           };
         }
-        // Stop any other running tasks
         if (task.isRunning) {
           return {
             ...task,
@@ -413,7 +527,11 @@ const App = () => {
       <AppContainer>
         <Header>
           <Title>Productivity Library</Title>
-          <AddButton onClick={() => setShowModal(true)}>Add Task</AddButton>
+          <HeaderButtons>
+            <HeaderButton primary onClick={() => setShowModal(true)}>
+              <i className="fas fa-plus"></i> Add Task
+            </HeaderButton>
+          </HeaderButtons>
         </Header>
 
         <TaskLibrary>
@@ -430,29 +548,33 @@ const App = () => {
                 <TaskTitle>{task.title}</TaskTitle>
                 <TaskTime>Time spent: {formatTime(task.timeSpent)}</TaskTime>
                 <TaskControls>
+                  <EditButton onClick={() => handleEditTask(task)}>
+                    <i className="fas fa-edit"></i> Edit
+                  </EditButton>
                   {task.isRunning ? (
                     <ControlButton onClick={() => handleStopTimer(task.id)}>
-                      Stop
+                      <i className="fas fa-stop"></i> Stop
                     </ControlButton>
                   ) : (
                     <ControlButton primary onClick={() => handleStartTimer(task.id)}>
-                      Start
+                      <i className="fas fa-play"></i> Start
                     </ControlButton>
                   )}
                   <DeleteButton onClick={() => handleDeleteTask(task.id)}>
-                    Delete
+                    <i className="fas fa-trash-alt"></i> Delete
                   </DeleteButton>
                 </TaskControls>
               </TaskContent>
             </TaskCardWrapper>
           ))}
         </TaskLibrary>
-          <Statistics tasks={tasks} />
+
+        <Statistics tasks={tasks} />
 
         {showModal && (
-          <ModalOverlay onClick={() => setShowModal(false)}>
+          <ModalOverlay onClick={resetForm}>
             <ModalContent onClick={e => e.stopPropagation()}>
-              <ModalTitle>Add New Task</ModalTitle>
+              <ModalTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</ModalTitle>
               <FormGroup>
                 <FormLabel>Task Title</FormLabel>
                 <FormInput
@@ -463,8 +585,9 @@ const App = () => {
                   placeholder="Enter task name"
                 />
               </FormGroup>
+              
               <FormGroup>
-                <FormLabel>Background Image URL</FormLabel>
+                <FormLabel>Background Image</FormLabel>
                 <FormInput
                   type="text"
                   name="background"
@@ -472,13 +595,38 @@ const App = () => {
                   onChange={handleInputChange}
                   placeholder="Enter image URL"
                 />
+                <UploadLabel>
+                  <i className="fas fa-upload"></i> Upload from device
+                  <FileInput 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    ref={fileInputRef}
+                  />
+                </UploadLabel>
+                {imagePreview && (
+                  <ImagePreview>
+                    <img src={imagePreview} alt="Preview" />
+                  </ImagePreview>
+                )}
               </FormGroup>
+              
+              <FormGroup>
+                <FormLabel>Time Spent (HH:MM:SS)</FormLabel>
+                <FormInput
+                  type="text"
+                  value={formatTime(newTask.timeSpent)}
+                  onChange={handleTimeChange}
+                  placeholder="00:00:00"
+                />
+              </FormGroup>
+              
               <ModalButtons>
-                <ControlButton onClick={() => setShowModal(false)}>
-                  Cancel
+                <ControlButton onClick={resetForm}>
+                  <i className="fas fa-times"></i> Cancel
                 </ControlButton>
                 <ControlButton primary onClick={handleAddTask}>
-                  Add Task
+                  <i className="fas fa-check"></i> {editingTask ? 'Save' : 'Add'}
                 </ControlButton>
               </ModalButtons>
             </ModalContent>
