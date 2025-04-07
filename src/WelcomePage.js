@@ -71,7 +71,7 @@ const WelcomePage = ({ onLoginSuccess }) => {
         </Header>
 
         <ModalContent style={{ maxWidth: '400px', margin: '50px auto' }}>
-          <ModalTitle>{isLogin ? 'Вход' : 'Регистрация'}</ModalTitle>
+          <ModalTitle>{isLogin ? 'Login' : 'Register'}</ModalTitle>
           
           {error && <div style={{ color: '#ff6464', marginBottom: '15px' }}>{error}</div>}
           
@@ -88,12 +88,12 @@ const WelcomePage = ({ onLoginSuccess }) => {
             </FormGroup>
             
             <FormGroup>
-              <FormLabel>Пароль</FormLabel>
+              <FormLabel>Password</FormLabel>
               <FormInput
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Введите пароль"
+                placeholder="Enter your password"
                 required
                 minLength="6"
               />
@@ -106,11 +106,11 @@ const WelcomePage = ({ onLoginSuccess }) => {
               style={{ width: '100%', marginTop: '15px' }}
             >
               {loading ? (
-                'Загрузка...'
+                'Loading...'
               ) : isLogin ? (
-                'Войти'
+                'Login'
               ) : (
-                'Зарегистрироваться'
+                'Register'
               )}
             </ControlButton>
           </form>
@@ -118,7 +118,7 @@ const WelcomePage = ({ onLoginSuccess }) => {
           <div style={{ marginTop: '20px', textAlign: 'center', color: '#c6d4df' }}>
             {isLogin ? (
               <>
-                Нет аккаунта?{' '}
+                Don't have account?{' '}
                 <button 
                   onClick={() => setIsLogin(false)}
                   style={{
@@ -129,12 +129,12 @@ const WelcomePage = ({ onLoginSuccess }) => {
                     textDecoration: 'underline'
                   }}
                 >
-                  Зарегистрироваться
+                  Register
                 </button>
               </>
             ) : (
               <>
-                Уже есть аккаунт?{' '}
+                Have account?{' '}
                 <button 
                   onClick={() => setIsLogin(true)}
                   style={{
@@ -145,7 +145,7 @@ const WelcomePage = ({ onLoginSuccess }) => {
                     textDecoration: 'underline'
                   }}
                 >
-                  Войти
+                  Login
                 </button>
               </>
             )}

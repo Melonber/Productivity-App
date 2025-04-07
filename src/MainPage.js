@@ -52,7 +52,7 @@ const MainPage = ({ onLogout }) => {
   const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
-    background: 'https://via.placeholder.com/300x120?text=Task+Image',
+    background: '',
     timeSpent: 0,
     isRunning: false,
     startTime: null
@@ -120,7 +120,7 @@ const MainPage = ({ onLogout }) => {
   const resetForm = () => {
     setNewTask({
       title: '',
-      background: 'https://via.placeholder.com/300x120?text=Task+Image',
+      background: '',
       timeSpent: 0,
       isRunning: false,
       startTime: null
