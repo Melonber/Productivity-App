@@ -261,3 +261,12 @@ export const TimeValue = styled.p`
   font-size: 24px;
   font-weight: bold;
 `;
+
+export const LogoutButton = styled(HeaderButton)`
+  background: linear-gradient(to bottom, #ff6464 5%, #d93c3c 95%);
+  color: #fff;
+  
+  &:hover {
+    background: linear-gradient(to bottom, #ff7a7a 5%, #e05050 95%);
+  }
+`;
